@@ -29,7 +29,7 @@ namespace otto::engines {
 
             int _beat_counter = 0;
             std::vector<char> sequence;
-        };
+        } channel;
 
         struct Props : Properties<> {
             Property<int> channel = {this, "Channel", 0, has_limits::init(0,3)};

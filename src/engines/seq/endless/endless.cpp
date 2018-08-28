@@ -44,6 +44,10 @@ namespace otto::engines {
         void draw_channel(ui::vg::Canvas & ctx, State::ChannelState & chan);
     };
 
+    Endless::Endless() : SequencerEngine("Endless", props, std::make_unique<EndlessScreen>(this)) {
+        static_cast<EndlessScreen*>(&screen())->refresh_state();
+    }
+
     audio::ProcessData<0> Endless::process(audio::ProcessData<0> data) {
         auto & current = current_channel();
         if (recording) {
@@ -101,8 +105,15 @@ namespace otto::engines {
 
     bool EndlessScreen::keypress(ui::Key key) {
         switch (key) {
-            case ui::Key:red_click:
-                
+            case ui::Key::red_click: 
+                // start recording
+                break;
+            case ui::Key::white_click:
+                // delete sequence
+                break;
+            
+            
         }
+        return true;
     }
 }
