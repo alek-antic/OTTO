@@ -1,4 +1,4 @@
-#include "endless.hpp"
+#include "eternal.hpp"
 
 #include "core/globals.hpp"
 #include "core/ui/vector_graphics.hpp"
@@ -14,10 +14,10 @@ namespace otto::engines {
     using namespace ui;
     using namespace ui::vg;
 
-    using Channel = Endless::Channel;
+    using Channel = Eternal::Channel;
 
-    struct EndlessScreen : EngineScreen<Endless> {
-        using EngineScreen<Endless>::EngineScreen;
+    struct EternalScreen : EngineScreen<Eternal> {
+        using EngineScreen<Eternal>::EngineScreen;
 
         void draw(Canvas& ctx) override;
         bool keypress(Key key) override;
@@ -35,7 +35,7 @@ namespace otto::engines {
                 Colour color = Colours::Gray70;
                 int length = 0;
                 
-            }
+            };
             std::array<ChannelState, 4> channels;
         } state;
 
@@ -44,19 +44,17 @@ namespace otto::engines {
         void draw_channel(ui::vg::Canvas & ctx, State::ChannelState & chan);
     };
 
-    Endless::Endless() : SequencerEngine("Endless", props, std::make_unique<EndlessScreen>(this)) {
-        static_cast<EndlessScreen*>(&screen())->refresh_state();
+    Eternal::Eternal() : SequencerEngine("Eternal", props, std::make_unique<EternalScreen>(this)) {
+        
     }
 
-    audio::ProcessData<0> Endless::process(audio::ProcessData<0> data) {
-        auto & current = current_channel();
+    audio::ProcessData<0> Eternal::process(audio::ProcessData<0> data) {
         if (recording) {
             for (auto& event : data.midi) {
                 util::match(event,
                 [&](midi::NoteOnEvent& ev) {
                     if(!_has_pressed_keys) {
                         util::fill(recording.value(), -1);
-                        util::fill(current.notes, -1);
                         _has_pressed_keys = true;
                     }
                     for (auto& note : recording.value()) {
@@ -95,15 +93,15 @@ namespace otto::engines {
         return data;
     }
 
-    void Endless::Channel::delete_sequence() {
+    void Eternal::Channel::delete_sequence() {
         sequence.clear();
     }
 
-    void Endless::Channel::add_note(char note) {
+    void Eternal::Channel::add_note(char note) {
         sequence.push_back(note);
     }
 
-    bool EndlessScreen::keypress(ui::Key key) {
+    bool EternalScreen::keypress(ui::Key key) {
         switch (key) {
             case ui::Key::red_click: 
                 // start recording

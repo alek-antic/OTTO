@@ -15,35 +15,25 @@ namespace otto::engines {
     using namespace core::engines;
     using namespace props;
 
-    struct Endless : SequencerEngine {
-        
+    struct Eternal : SequencerEngine {
+        static constexpr int max_length = 64;
         struct Channel : Properties<> {
-            Property<int> length = {this, "Length", 0, steppable::init(1)};
+            Property<int> length = {this, "Length", 0, steppable::init(1), has_limits::init(0, max_length)};
             
-            std::array<char, 6> notes = {{-1, -1, -1 ,-1 , -1, -1}};
-
             void delete_sequence();
             void add_note(char note);
-
-            Channel(properties_base* prnt, int n) : Properties(prnt, std::to_string(n)){};
 
             int _beat_counter = 0;
             std::vector<char> sequence;
         } channel;
 
         struct Props : Properties<> {
-            Property<int> channel = {this, "Channel", 0, has_limits::init(0,3)};
-            Properties<> channels_props = {this, "Channels"};
-            std::array<Channel, 4> channels = util::generate_array<4>([this](int) { return Channel(this, n); });
+            Property<int> max_beat = {this, "Current Beat", 0, has_limits::init(0, max_length)};
         } props;
 
-        Endless();
+        Eternal();
 
-        audio::ProcessData<0> process(audi::ProcessData<0>) override;
-
-        Channel & current_channel() {
-            return props.channels.at(props.channel);
-        }
+        audio::ProcessData<0> process(audio::ProcessData<0>) override;
 
         std::optional<std::array<char, 6>> recording = std::nullopt;
 
@@ -51,12 +41,12 @@ namespace otto::engines {
     
 
     private:
-        friend struct EndlessScreen;
+        friend struct EternalScreen;
 
         int _samples_per_beat = 22050;
         int _counter = _samples_per_beat;
         bool _should_run = false;
 
         bool _has_pressed_keys = false;
-    }
+    };
 } // namespace otto::engines
