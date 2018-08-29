@@ -20,16 +20,25 @@ namespace otto::engines {
     struct Channel : Properties<> {
       Property<int> length = {this, "Length", 0, has_limits::init(0, max_length), steppable::init(1)};
       
-      void delete_sequence();
-      void add_note(char note);
+      void delete_sequence() {
+        sequence.clear();
+      }
+
+      void add_note(char note) {
+        sequence.push_back(note);
+        props.current_beat++;
+      }
 
       int _beat_counter = 0;
       std::vector<char> sequence;
     } channel;
 
     struct Props : Properties<> {
-      Property<int> max_beat = {this, "Maximum Beat", 0, has_limits::init(0, max_length)};
-      
+      Property<int> current_beat = {this, "Current Beat", 0, has_limits::init(0, max_length)};
+
+      char get_current_note() {
+        return channel.sequence[current_beat];
+      }
     } props;
 
     Eternal();
