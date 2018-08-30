@@ -25,9 +25,6 @@ namespace otto::engines {
     bool keypress(Key key) override;
     void rotary(RotaryEvent e) override;
 
-    void draw_normal(Canvas & ctx);
-    void draw_recording(Canvas& ctx);
-
     struct State {
       Point center = {127, 120};
 
@@ -37,12 +34,12 @@ namespace otto::engines {
         Colour color = Colours::Gray70;
         int length = 0;
         
+        int min_note_idx = 0;
+        int max_note_idx = 0;
       };
     } state;
 
     void refresh_state();
-
-    void draw(ui::vg::Canvas & ctx);
   };
 
   Eternal::Eternal() : SequencerEngine("Eternal", props, std::make_unique<EternalScreen>(this)) {
@@ -51,16 +48,11 @@ namespace otto::engines {
 
   audio::ProcessData<0> Eternal::process(audio::ProcessData<0> data) {
     for (auto& event : data.midi) {
-      bool keyReleased = true;
       util::match(event,
                   [&] (midi::NoteOnEvent& ev) { // handle when a note is pressed
-                    if (keyReleased) {
                       engine.channel.add_note(ev.key);
-                      keyReleased = false;
-                    }
                   },
                   [&] (midi::NoteOffEvent& ev){ // handle when a note is released
-                    keyReleased = true;
                   },
                   [](auto&&){} //handle all other cases
                   );
@@ -81,7 +73,7 @@ namespace otto::engines {
     auto next_beat = _samples_per_beat - _counter;
     auto& channel = engine.channel;
     if (next_beat <= data.nframes) {
-      if (engine.props.current_beat >= channel.length) {
+      if (engine.props.current_beat.get() >= channel.length.get()) {
         running = false;
       } else if (channel.length > 0) {
         auto note = engine.props.get_current_note();
@@ -101,8 +93,11 @@ namespace otto::engines {
   void EternalScreen::rotary(ui::RotaryEvent ev) {
 
     switch(ev.rotary) {
-      
+      case Rotary::Green: //go back/forth through sequence
+        engine.delta(ev.clicks);
+      break;
     }
+    refresh_state();
   }
 
   bool EternalScreen::keypress(ui::Key key) {
@@ -114,5 +109,16 @@ namespace otto::engines {
       
     }
     return true;
+  }
+
+  void EternalScreen::refresh_state() {
+    auto& props = engine.props;
+    
+    state.min_note_idx = std::max(0, props.current_beat.get() - max_beats / 2);
+    state.max_note_idx = std::min(props.current_beat.get() + max_beats / 2, engine.channel.sequence.length);
+  }
+
+  void EternalScreen::draw(ui::vg::Canvas& ctx) {
+
   }
 }

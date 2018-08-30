@@ -18,7 +18,7 @@ namespace otto::engines {
   struct Eternal : SequencerEngine {
     static constexpr int max_length = 64;
     struct Channel : Properties<> {
-      Property<int> length = {this, "Length", 0, has_limits::init(0, max_length), steppable::init(1)};
+      Property<int> length = {this, "Length", 0, has_limits::init(0, max_length)};
       
       void delete_sequence() {
         sequence.clear();
@@ -43,6 +43,10 @@ namespace otto::engines {
     Eternal();
 
     audio::ProcessData<0> process(audio::ProcessData<0>) override;
+
+    void delta(int clicks) {
+      props.current_beat.set(current_beat + clicks);
+    }
 
     bool running = false;
   
