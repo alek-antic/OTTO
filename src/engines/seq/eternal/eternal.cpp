@@ -19,6 +19,8 @@ namespace otto::engines {
   struct EternalScreen : EngineScreen<Eternal> {
     using EngineScreen<Eternal>::EngineScreen;
 
+    static constexpr int max_beats = 24;
+
     void draw(Canvas& ctx) override;
     bool keypress(Key key) override;
     void rotary(RotaryEvent e) override;
@@ -36,12 +38,11 @@ namespace otto::engines {
         int length = 0;
         
       };
-      std::array<ChannelState, 4> channels;
     } state;
 
     void refresh_state();
 
-    void draw_channel(ui::vg::Canvas & ctx, State::ChannelState & chan);
+    void draw(ui::vg::Canvas & ctx);
   };
 
   Eternal::Eternal() : SequencerEngine("Eternal", props, std::make_unique<EternalScreen>(this)) {
@@ -49,7 +50,59 @@ namespace otto::engines {
   }
 
   audio::ProcessData<0> Eternal::process(audio::ProcessData<0> data) {
+    for (auto& event : data.midi) {
+      bool keyReleased = true;
+      util::match(event,
+                  [&] (midi::NoteOnEvent& ev) { // handle when a note is pressed
+                    if (keyReleased) {
+                      engine.channel.add_note(ev.key);
+                      keyReleased = false;
+                    }
+                  },
+                  [&] (midi::NoteOffEvent& ev){ // handle when a note is released
+                    keyReleased = true;
+                  },
+                  [](auto&&){} //handle all other cases
+                  );
+    }
 
+    // check if the engine should play the sounds in the data
+
+    if (_should_run) running = true;
+    if (!running) return data;
+
+    if (!_should_run && running) {
+      _counter = _samples_per_beat;
+      running = false;
+      return data;
+    }
+
+    // _should_run && running
+    auto next_beat = _samples_per_beat - _counter;
+    auto& channel = engine.channel;
+    if (next_beat <= data.nframes) {
+      if (engine.props.current_beat >= channel.length) {
+        running = false;
+      } else if (channel.length > 0) {
+        auto note = engine.props.get_current_note();
+        data.midi.push_back(midi::NoteOnEvent(note));
+        data.midi.push_back(midi::NoteOffEvent(note));
+      }
+    }
+
+    _counter += data.nframes;
+    _counter %= _samples_per_beat;
+    return data;
+  }
+
+
+  // SCREEN //
+
+  void EternalScreen::rotary(ui::RotaryEvent ev) {
+
+    switch(ev.rotary) {
+      
+    }
   }
 
   bool EternalScreen::keypress(ui::Key key) {

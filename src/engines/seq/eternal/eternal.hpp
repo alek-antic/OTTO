@@ -29,7 +29,6 @@ namespace otto::engines {
         props.current_beat++;
       }
 
-      int _beat_counter = 0;
       std::vector<char> sequence;
     } channel;
 
@@ -44,8 +43,6 @@ namespace otto::engines {
     Eternal();
 
     audio::ProcessData<0> process(audio::ProcessData<0>) override;
-
-    std::optional<std::array<char, 6>> recording = std::nullopt;
 
     bool running = false;
   
