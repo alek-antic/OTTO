@@ -19,33 +19,42 @@ namespace otto::engines {
     static constexpr int max_length = 64;
     static constexpr int midi_max = 127;
 
-    struct Channel : Properties<> {
-      std::vector<char> sequence;
+    struct Sequence : Properties<> {
+      std::vector<char> notes;
 
-      Property<int> length = {this, "Length", 0, has_limits::init(0, max_length), 
-                                    steppable::init(1)};
-      Property<int> start = {this, "Start", 0, has_limits::init(0, max_length),
-                                    steppable::init(1)};
-      Property<int, wrap> sequence_time = {this, "Sequence Time", 2, has_limits::init(0,4), steppable::init(1)};
+      bool add_note(char note) {
+        if (notes.size() < max_length) {
+          notes.push_back(note);
+          return true;
+        }
+        return false;
+      };
 
-      struct Props : Properties<> {
-        Property<int, wrap> current_beat = {this, "Current Beat", 0, has_limits::init(0, max_length)};
-        Property<char, wrap> current_note = {this, "Current Note", -1, has_limits::init(-1, midi_max), steppable::init(1)};
-        Property<int, wrap> note_time = {this, "Note Time", 2, has_limits::init(0, 4), steppable::init(1)};
-      } props;
+      void delta_note(int ind, char delta) {
+        notes[ind] += delta;
 
-      void delete_sequence() {
-        sequence.clear();
+        // wrap the note around the ends
+        if (notes[ind] < 0) {
+          notes[ind] = midi_max - notes[ind];
+        } else if (notes[ind] > midi_max) {
+          notes[ind] = notes[ind] - midi_max;
+        }
       }
 
-      void add_note(char note) {
-        sequence.push_back(note);
-        props.current_beat;
+      void delete_note(int ind) {
+        if (notes[ind]) {
+          notes[ind] = -1;
+        }
       }
+      
+      
+    } sequence;
 
-    } channel;
-
-
+    struct Props : Properties<> {
+      Property<int, wrap> current_beat = {this, "Current Beat", 0, has_limits::init(0, max_length),
+                                          steppable::init(1)};
+      
+    } props;
 
     Eternal();
 
