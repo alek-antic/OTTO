@@ -8,6 +8,7 @@
 #include "util/utility.hpp"
 
 #include "services/logger.hpp"
+#include "services/state.hpp"
 
 namespace otto::engines {
 
@@ -56,6 +57,11 @@ namespace otto::engines {
     static_cast<EuclidScreen*>(&screen())->refresh_state();
   }
 
+  void Euclid::on_enable()
+  {
+    for (auto& c : props.channels) c.update_notes();
+    static_cast<EuclidScreen*>(&screen())->refresh_state();
+  }
 
   audio::ProcessData<0> Euclid::process(audio::ProcessData<0> data)
   {
@@ -83,7 +89,7 @@ namespace otto::engines {
                         if (note != ev.key) continue;
                         note = -1;
                       }
-                      if (util::all_of(recording.value(), [](char note) { return note < 0; })) {
+                      if (util::all_of(recording.value(), [](int note) { return note < 0; })) {
                         recording = std::nullopt;
                       }
                     },
@@ -189,7 +195,7 @@ namespace otto::engines {
 
     auto& current = engine.current_channel();
 
-    ctx.font(Fonts::Bold, 40);
+    ctx.font(Fonts::Norm, 40);
 
     ctx.beginPath();
     ctx.fillStyle(Colours::Red);
@@ -197,12 +203,12 @@ namespace otto::engines {
     ctx.fillText("CHANNEL NOTES", {160, 50});
 
     ctx.beginPath();
-    ctx.fillText(
-      util::join_strings(util::view::transform(
-                           util::view::filter(current.notes.get(), [](char note) { return note >= 0; }),
-                           [](char note) { return midi::note_name(note); }),
-                         " "),
-      {160, 120});
+    ctx.fillText(util::join_strings(
+                   util::view::transform(
+                     util::view::filter(current.notes.get(), [](int note) { return note >= 0; }),
+                     [](int note) { return midi::note_name(note); }),
+                   " "),
+                 {160, 120});
   }
 
   void EuclidScreen::draw_normal(ui::vg::Canvas& ctx)
@@ -223,30 +229,30 @@ namespace otto::engines {
             2.0 * M_PI * (current.rotation / float(state.max_length) - 0.25));
     ctx.stroke(Colours::Red);
 
-    ctx.font(Fonts::Norm, 14.0);
+    ctx.font(Fonts::Norm, 22.0);
     ctx.fillStyle(Colours::White);
-    ctx.fillText("Length", 251.9, 41.6);
+    ctx.fillText("length", 252, 41.6);
 
     ctx.save();
-    ctx.font(Fonts::Norm, 30.0);
+    ctx.font(Fonts::Norm, 35.0);
     ctx.fillStyle(Colours::Green);
-    ctx.fillText(std::to_string(current.length), 251.9, 72.9);
+    ctx.fillText(std::to_string(current.length), 252, 72.9);
 
-    ctx.font(Fonts::Norm, 14.0);
+    ctx.font(Fonts::Norm, 22.0);
     ctx.fillStyle(Colours::White);
-    ctx.fillText("Pulses", 251.9, 111.7);
+    ctx.fillText("pulses", 252, 108.7);
 
-    ctx.font(Fonts::Norm, 30.0);
+    ctx.font(Fonts::Norm, 35.0);
     ctx.fillStyle(Colours::Yellow);
-    ctx.fillText(std::to_string(current.hits), 251.9, 143.0);
+    ctx.fillText(std::to_string(current.hits), 252, 140.0);
 
-    ctx.font(Fonts::Norm, 14.0);
+    ctx.font(Fonts::Norm, 22.0);
     ctx.fillStyle(Colours::White);
-    ctx.fillText("rotation", 251.9, 173.9);
+    ctx.fillText("offset", 252, 173.9);
 
-    ctx.font(Fonts::Norm, 30.0);
+    ctx.font(Fonts::Norm, 35.0);
     ctx.fillStyle(Colours::Red);
-    ctx.fillText(std::to_string(current.rotation), 251.9, 205.3);
+    ctx.fillText(std::to_string(current.rotation), 252, 205.3);
 
     ctx.restore();
   }
@@ -255,7 +261,7 @@ namespace otto::engines {
   {
     using namespace ui::vg;
 
-    auto hit_colour = chan.is_current ? Colour(Colours::Blue) : Colour::bytes(0x77, 0x57, 0x77);
+    auto hit_colour = chan.is_current ? Colour(Colours::Blue) : Colour::bytes(0x88, 0x72, 0x8E);
     auto len_colour = chan.is_current ? Colour(Colours::Green) : hit_colour;
 
     if (chan.length == 0) {
@@ -275,8 +281,9 @@ namespace otto::engines {
     if (chan.length < state.max_length) {
       ctx.lineWidth(6);
       ctx.beginPath();
-      ctx.arc(state.center, chan.radius, 2 * M_PI * ((chan.length - 0.3) / float(state.max_length) - 0.25),
-               2 * M_PI * ((state.max_length - 1 + 0.3) / float(state.max_length) - 0.25));
+      ctx.arc(state.center, chan.radius,
+              2 * M_PI * ((chan.length - 0.3) / float(state.max_length) - 0.25),
+              2 * M_PI * ((state.max_length - 1 + 0.3) / float(state.max_length) - 0.25));
       ctx.stroke(len_colour);
     }
 

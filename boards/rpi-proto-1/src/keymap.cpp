@@ -31,7 +31,7 @@ namespace otto::board::ui {
     };
 
     auto shutdown = [action] {
-      if (action == Action::press) std::system("halt");
+      if (action == Action::press) std::system("shutdown -h now");
     };
 
     switch (key) {
@@ -78,20 +78,23 @@ namespace otto::board::ui {
     case Key::left_shift: send_key(OKey::shift); break;
 
     case Key::enter:
-      if (service::ui::is_pressed(OKey::shift)) shutdown();
+      if (service::ui::is_pressed(OKey::shift))
+        shutdown();
+      else
+        send_key(OKey::master);
       break;
     case Key::y: break;
     case Key::z: break;
 
     case Key::n1: send_key(OKey::sequencer); break;
     case Key::n2: send_key(OKey::synth); break;
-    case Key::n3: break; // FX 1
+    case Key::n3: send_key(OKey::fx1); break;
     case Key::n4: break; // FX 2
 
     case Key::n5: send_key(OKey::voices); break;
     case Key::n6: send_key(OKey::envelope); break;
-    case Key::n7: break; // MOMENT 1
-    case Key::n8: break; // MOMENT 2
+    case Key::n7: break; // TWIST 1
+    case Key::n8: break; // TWIST 2
 
     default: break;
     }
